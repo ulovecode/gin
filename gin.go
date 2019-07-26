@@ -164,6 +164,7 @@ func New() *Engine {
 func Default() *Engine {
 	debugPrintWARNINGDefault()
 	engine := New()
+	//默认的引擎使用了自带的日志和恢复
 	engine.Use(Logger(), Recovery())
 	return engine
 }
@@ -203,8 +204,8 @@ func (engine *Engine) LoadHTMLGlob(pattern string) {
 	engine.SetHTMLTemplate(templ)
 }
 
-// LoadHTMLFiles loads a slice of HTML files
-// and associates the result with HTML renderer.
+// LoadHTMLFiles 加载一段HTML文件
+// 并将结果与​​HTML渲染器关联。
 func (engine *Engine) LoadHTMLFiles(files ...string) {
 	if IsDebugging() {
 		engine.HTMLRender = render.HTMLDebug{Files: files, FuncMap: engine.FuncMap, Delims: engine.delims}
@@ -224,12 +225,12 @@ func (engine *Engine) SetHTMLTemplate(templ *template.Template) {
 	engine.HTMLRender = render.HTMLProduction{Template: templ.Funcs(engine.FuncMap)}
 }
 
-// SetFuncMap sets the FuncMap used for template.FuncMap.
+// SetFuncMap 设置用于template.FuncMap的FuncMap。
 func (engine *Engine) SetFuncMap(funcMap template.FuncMap) {
 	engine.FuncMap = funcMap
 }
 
-// NoRoute adds handlers for NoRoute. It return a 404 code by default.
+// NoRoute 为NoRoute添加处理程序。它默认返回404代码。
 func (engine *Engine) NoRoute(handlers ...HandlerFunc) {
 	engine.noRoute = handlers
 	engine.rebuild404Handlers()
@@ -306,14 +307,16 @@ func iterate(path, method string, routes RoutesInfo, root *node) RoutesInfo {
 	return routes
 }
 
-// Run attaches the router to a http.Server and starts listening and serving HTTP requests.
-// It is a shortcut for http.ListenAndServe(addr, router)
-// Note: this method will block the calling goroutine indefinitely unless an error happens.
+// Run 将路由器附加到http.Server并开始侦听和提供HTTP请求。
+//这是http.ListenAndServe（addr，路由器）的快捷方式
+//注意：除非发生错误，否则此方法将无限期地阻止调用goroutine。
 func (engine *Engine) Run(addr ...string) (err error) {
 	defer func() { debugPrintError(err) }()
 
+	// 解析地址
 	address := resolveAddress(addr)
 	debugPrint("Listening and serving HTTP on %s\n", address)
+	// 监听地址
 	err = http.ListenAndServe(address, engine)
 	return
 }
@@ -394,7 +397,7 @@ func (engine *Engine) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 // HandleContext re-enter a context that has been rewritten.
 // This can be done by setting c.Request.URL.Path to your new target.
 // Disclaimer: You can loop yourself to death with this, use wisely.
-//  重新输入已重写的上下文。
+// 重新输入已重写的上下文。
 // 这可以通过将c.Request.URL.Path设置为新目标来完成。
 // 免责声明：你可以用这个循环自己，明智地使用。
 func (engine *Engine) HandleContext(c *Context) {

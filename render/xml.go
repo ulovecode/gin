@@ -19,6 +19,7 @@ var xmlContentType = []string{"application/xml; charset=utf-8"}
 // Render (XML) encodes the given interface object and writes data with custom ContentType.
 func (r XML) Render(w http.ResponseWriter) error {
 	r.WriteContentType(w)
+	//调用xml库的解析
 	return xml.NewEncoder(w).Encode(r.Data)
 }
 

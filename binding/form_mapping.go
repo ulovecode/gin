@@ -18,6 +18,7 @@ import (
 var errUnknownType = errors.New("Unknown type")
 
 func mapUri(ptr interface{}, m map[string][]string) error {
+	// 解析表达的那个部位
 	return mapFormByTag(ptr, m, "uri")
 }
 
@@ -50,27 +51,36 @@ func mappingByPtr(ptr interface{}, setter setter, tag string) error {
 	return err
 }
 
+// 解析表单最主要的内容    value 要被设置的值  field 要被设置的字段值
 func mapping(value reflect.Value, field reflect.StructField, setter setter, tag string) (bool, error) {
+	// 获得value的类型
 	var vKind = value.Kind()
 
+	// 如果传入的是指针类型
 	if vKind == reflect.Ptr {
 		var isNew bool
 		vPtr := value
+		// 如果区域
 		if value.IsNil() {
 			isNew = true
+			// 反射一个类型指针
 			vPtr = reflect.New(value.Type().Elem())
 		}
+		// 递归解析
 		isSetted, err := mapping(vPtr.Elem(), field, setter, tag)
 		if err != nil {
 			return false, err
 		}
 		if isNew && isSetted {
+			// vptr被解析后设置指针类型回来
 			value.Set(vPtr)
 		}
+		// 是否设置成功
 		return isSetted, nil
 	}
-
+	// 如果是不是struct类型或者不是内嵌类型的处理
 	if vKind != reflect.Struct || !field.Anonymous {
+		// 尝试设置值
 		ok, err := tryToSetValue(value, field, setter, tag)
 		if err != nil {
 			return false, err
@@ -79,20 +89,23 @@ func mapping(value reflect.Value, field reflect.StructField, setter setter, tag 
 			return true, nil
 		}
 	}
-
+	// 如果是struct类型
 	if vKind == reflect.Struct {
 		tValue := value.Type()
 
 		var isSetted bool
 		for i := 0; i < value.NumField(); i++ {
 			sf := tValue.Field(i)
+			// 如果包路径为空或者 不是嵌入类型就跳过
 			if sf.PkgPath != "" && !sf.Anonymous { // unexported
 				continue
 			}
+			// 递归设置
 			ok, err := mapping(value.Field(i), tValue.Field(i), setter, tag)
 			if err != nil {
 				return false, err
 			}
+			// 因为是一个循环设置 只要设置成功一次 那么就返回成功
 			isSetted = isSetted || ok
 		}
 		return isSetted, nil

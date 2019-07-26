@@ -19,13 +19,16 @@ type defaultValidator struct {
 var _ StructValidator = &defaultValidator{}
 
 // ValidateStruct receives any kind of type, but only performed struct or pointer to struct type.
+// 默认的验证策略
 func (v *defaultValidator) ValidateStruct(obj interface{}) error {
 	value := reflect.ValueOf(obj)
 	valueType := value.Kind()
+	// 如果是指针类型到需要拿到具体类型
 	if valueType == reflect.Ptr {
 		valueType = value.Elem().Kind()
 	}
 	if valueType == reflect.Struct {
+		// 懒初始化到初始化时机在调用到时候菜去初始化
 		v.lazyinit()
 		if err := v.validate.Struct(obj); err != nil {
 			return err

@@ -106,6 +106,7 @@ func Default(method, contentType string) Binding {
 	}
 }
 
+// 验证过程
 func validate(obj interface{}) error {
 	if Validator == nil {
 		return nil

@@ -21,6 +21,10 @@ type neuteredReaddirFile struct {
 // in router.Static().
 // if listDirectory == true, then it works the same as http.Dir() otherwise it returns
 // a filesystem that prevents http.FileServer() to list the directory files.
+// 返回http.FileServer（）可以使用的http.Filesystem。它在内部使用
+// 在router.Static（）中。
+// 如果listDirectory == true，那么它与http.Dir（）的工作方式相同，否则返回
+// 阻止http.FileServer（）列出目录文件的文件系统。
 func Dir(root string, listDirectory bool) http.FileSystem {
 	fs := http.Dir(root)
 	if listDirectory {
@@ -38,7 +42,7 @@ func (fs onlyfilesFS) Open(name string) (http.File, error) {
 	return neuteredReaddirFile{f}, nil
 }
 
-// Readdir overrides the http.File default implementation.
+// Readdir 覆盖http.File默认实现。
 func (f neuteredReaddirFile) Readdir(count int) ([]os.FileInfo, error) {
 	// this disables directory listing
 	return nil, nil

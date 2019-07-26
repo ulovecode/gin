@@ -10,6 +10,7 @@ func (uriBinding) Name() string {
 	return "uri"
 }
 
+// 把 map 解析到 obj 里
 func (uriBinding) BindUri(m map[string][]string, obj interface{}) error {
 	if err := mapUri(obj, m); err != nil {
 		return err

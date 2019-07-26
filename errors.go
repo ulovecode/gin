@@ -22,11 +22,11 @@ const (
 	ErrorTypeRender ErrorType = 1 << 62
 	// ErrorTypePrivate indicates a private error.
 	ErrorTypePrivate ErrorType = 1 << 0
-	// ErrorTypePublic indicates a public error.
+	// ErrorTypePublic 表示公共错误。
 	ErrorTypePublic ErrorType = 1 << 1
-	// ErrorTypeAny indicates any other error.
+	// ErrorTypeAny 表示任何其他错误。
 	ErrorTypeAny ErrorType = 1<<64 - 1
-	// ErrorTypeNu indicates any other error.
+	// ErrorTypeNu 表示任何其他错误。
 	ErrorTypeNu = 2
 )
 
@@ -55,6 +55,7 @@ func (msg *Error) SetMeta(data interface{}) *Error {
 
 // JSON creates a properly formatted JSON
 func (msg *Error) JSON() interface{} {
+	// 一个Map对象
 	json := H{}
 	if msg.Meta != nil {
 		value := reflect.ValueOf(msg.Meta)
@@ -92,6 +93,7 @@ func (msg *Error) IsType(flags ErrorType) bool {
 
 // ByType returns a readonly copy filtered the byte.
 // ie ByType(gin.ErrorTypePublic) returns a slice of errors with type=ErrorTypePublic.
+// 返回错误集合中该类型的错误
 func (a errorMsgs) ByType(typ ErrorType) errorMsgs {
 	if len(a) == 0 {
 		return nil
@@ -134,6 +136,7 @@ func (a errorMsgs) Errors() []string {
 	return errorStrings
 }
 
+// 返回错误信息的json
 func (a errorMsgs) JSON() interface{} {
 	switch len(a) {
 	case 0:

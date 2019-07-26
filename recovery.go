@@ -27,11 +27,14 @@ var (
 )
 
 // Recovery returns a middleware that recovers from any panics and writes a 500 if there was one.
+// 返回一个恢复组件
 func Recovery() HandlerFunc {
 	return RecoveryWithWriter(DefaultErrorWriter)
 }
 
 // RecoveryWithWriter returns a middleware for a given writer that recovers from any panics and writes a 500 if there was one.
+// 返回给定编写器的中间件，从任何恐慌中恢复并写入500（如果有的话）。因为如果要recovery的话，那么当前协程肯定是被panic了。 但是服务器应该有状态返回，所以需要恢复回来，就像java中throw 了一个
+// 异常需要catch住
 func RecoveryWithWriter(out io.Writer) HandlerFunc {
 	var logger *log.Logger
 	if out != nil {
@@ -85,6 +88,7 @@ func RecoveryWithWriter(out io.Writer) HandlerFunc {
 }
 
 // stack returns a nicely formatted stack frame, skipping skip frames.
+// 返回栈信息 ，这样recovered时候可以把具体的错误打印出来
 func stack(skip int) []byte {
 	buf := new(bytes.Buffer) // the returned data
 	// As we loop, we open files and read them. These variables record the currently

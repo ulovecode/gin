@@ -13,6 +13,8 @@ import (
 	"github.com/gin-gonic/gin/internal/json"
 )
 
+// 有各种类型的Json解析形式
+
 // JSON contains the given interface object.
 type JSON struct {
 	Data interface{}

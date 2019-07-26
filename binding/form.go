@@ -52,6 +52,7 @@ func (formMultipartBinding) Name() string {
 }
 
 func (formMultipartBinding) Bind(req *http.Request, obj interface{}) error {
+	// 解析表单,传入一个最大的使用内存
 	if err := req.ParseMultipartForm(defaultMemory); err != nil {
 		return err
 	}

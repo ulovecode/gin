@@ -16,6 +16,7 @@ var once sync.Once
 var internalEngine *gin.Engine
 
 func engine() *gin.Engine {
+	// 内部引擎只能初始化一次
 	once.Do(func() {
 		internalEngine = gin.Default()
 	})

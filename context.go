@@ -88,6 +88,7 @@ func (c *Context) reset() {
 
 // Copy returns a copy of the current context that can be safely used outside the request's scope.
 // This has to be used when the context has to be passed to a goroutine.
+// 深拷贝一个Context
 func (c *Context) Copy() *Context {
 	var cp = *c
 	cp.writermem.ResponseWriter = nil
@@ -106,6 +107,7 @@ func (c *Context) Copy() *Context {
 
 // HandlerName returns the main handler's name. For example if the handler is "handleGetUsers()",
 // this function will return "main.handleGetUsers".
+// 返回最后一个handler的，方法名
 func (c *Context) HandlerName() string {
 	return nameOfFunction(c.handlers.Last())
 }
@@ -158,6 +160,10 @@ func (c *Context) IsAborted() bool {
 // Let's say you have an authorization middleware that validates that the current request is authorized.
 // If the authorization fails (ex: the password does not match), call Abort to ensure the remaining handlers
 // for this request are not called.
+// Abort阻止调用挂起的处理程序。请注意，这不会停止当前处理程序。
+// 假设您有一个授权中间件，可以验证当前请求是否已获得授权。
+// 如果授权失败（例如：密码不匹配），请调用Abort以确保剩余的处理程序
+// 不会调用此请求。
 func (c *Context) Abort() {
 	c.index = abortIndex
 }
@@ -173,6 +179,9 @@ func (c *Context) AbortWithStatus(code int) {
 // AbortWithStatusJSON calls `Abort()` and then `JSON` internally.
 // This method stops the chain, writes the status code and return a JSON body.
 // It also sets the Content-Type as "application/json".
+// AbortWithStatusJSON在内部调用`Abort（）`然后调用`JSON`。
+// 此方法停止链，写入状态代码并返回JSON正文。
+// 它还将Content-Type设置为“application / json”。
 func (c *Context) AbortWithStatusJSON(code int, jsonObj interface{}) {
 	c.Abort()
 	c.JSON(code, jsonObj)
@@ -181,6 +190,9 @@ func (c *Context) AbortWithStatusJSON(code int, jsonObj interface{}) {
 // AbortWithError calls `AbortWithStatus()` and `Error()` internally.
 // This method stops the chain, writes the status code and pushes the specified error to `c.Errors`.
 // See Context.Error() for more details.
+// 在内部调用`AbortWithStatus（）`和`Error（）`。
+// 此方法停止链，写入状态代码并将指定的错误推送到`c.Errors`。
+// 有关详细信息，请参阅Context.Error（）。
 func (c *Context) AbortWithError(code int, err error) *Error {
 	c.AbortWithStatus(code)
 	return c.Error(err)
@@ -219,11 +231,14 @@ func (c *Context) Error(err error) *Error {
 // Set is used to store a new key/value pair exclusively for this context.
 // It also lazy initializes  c.Keys if it was not used previously.
 func (c *Context) Set(key string, value interface{}) {
+	// 采用懒加载的方式，在需要的方式才会分配内存空间
 	if c.Keys == nil {
 		c.Keys = make(map[string]interface{})
 	}
 	c.Keys[key] = value
 }
+
+// 下面的集中Get方法都是从context上下文中拿到value
 
 // Get returns the value for the given key, ie: (value, true).
 // If the value does not exists it returns (nil, false)
@@ -232,7 +247,7 @@ func (c *Context) Get(key string) (value interface{}, exists bool) {
 	return
 }
 
-// MustGet returns the value for the given key if it exists, otherwise it panics.
+// MustGet 返回给定键的值（如果存在），否则会引起恐慌。
 func (c *Context) MustGet(key string) interface{} {
 	if value, exists := c.Get(key); exists {
 		return value
@@ -240,7 +255,7 @@ func (c *Context) MustGet(key string) interface{} {
 	panic("Key \"" + key + "\" does not exist")
 }
 
-// GetString returns the value associated with the key as a string.
+// GetString 以字符串形式返回与键关联的值。
 func (c *Context) GetString(key string) (s string) {
 	if val, ok := c.Get(key); ok && val != nil {
 		s, _ = val.(string)
@@ -338,6 +353,7 @@ func (c *Context) GetStringMapStringSlice(key string) (smss map[string][]string)
 //         // a GET request to /user/john
 //         id := c.Param("id") // id == "john"
 //     })
+// 通过名字拿到param的参数，这个参数是restful里面的餐忽视
 func (c *Context) Param(key string) string {
 	return c.Params.ByName(key)
 }
@@ -350,6 +366,7 @@ func (c *Context) Param(key string) string {
 // 	   c.Query("name") == "Manu"
 // 	   c.Query("value") == ""
 // 	   c.Query("wtf") == ""
+// 这个是queryString拿到参数
 func (c *Context) Query(key string) string {
 	value, _ := c.GetQuery(key)
 	return value
@@ -362,6 +379,7 @@ func (c *Context) Query(key string) string {
 //     c.DefaultQuery("name", "unknown") == "Manu"
 //     c.DefaultQuery("id", "none") == "none"
 //     c.DefaultQuery("lastname", "none") == ""
+// 有默认值的querystring
 func (c *Context) DefaultQuery(key, defaultValue string) string {
 	if value, ok := c.GetQuery(key); ok {
 		return value
@@ -423,6 +441,7 @@ func (c *Context) GetQueryMap(key string) (map[string]string, bool) {
 
 // PostForm returns the specified key from a POST urlencoded form or multipart form
 // when it exists, otherwise it returns an empty string `("")`.
+// 当它存在时，从POST urlencoded表单或multipart表单返回指定的键,否则返回一个空字符串`（“”）`.
 func (c *Context) PostForm(key string) string {
 	value, _ := c.GetPostForm(key)
 	return value
@@ -431,6 +450,7 @@ func (c *Context) PostForm(key string) string {
 // DefaultPostForm returns the specified key from a POST urlencoded form or multipart form
 // when it exists, otherwise it returns the specified defaultValue string.
 // See: PostForm() and GetPostForm() for further information.
+// 如果不存在这个键，就给一个默认值
 func (c *Context) DefaultPostForm(key, defaultValue string) string {
 	if value, ok := c.GetPostForm(key); ok {
 		return value
@@ -533,6 +553,7 @@ func (c *Context) MultipartForm() (*multipart.Form, error) {
 }
 
 // SaveUploadedFile uploads the form file to specific dst.
+// 保存文件
 func (c *Context) SaveUploadedFile(file *multipart.FileHeader, dst string) error {
 	src, err := file.Open()
 	if err != nil {
@@ -558,6 +579,7 @@ func (c *Context) SaveUploadedFile(file *multipart.FileHeader, dst string) error
 // It parses the request's body as JSON if Content-Type == "application/json" using JSON or XML as a JSON input.
 // It decodes the json payload into the struct specified as a pointer.
 // It writes a 400 error and sets Content-Type header "text/plain" in the response if input is not valid.
+// 将数据绑定到参数里面
 func (c *Context) Bind(obj interface{}) error {
 	b := binding.Default(c.Request.Method, c.ContentType())
 	return c.MustBindWith(obj, b)
@@ -806,6 +828,7 @@ func (c *Context) Cookie(name string) (string, error) {
 }
 
 // Render writes the response headers and calls render.Render to render data.
+// 写入响应头并调用render.Render来呈现数据。
 func (c *Context) Render(code int, r render.Render) {
 	c.Status(code)
 
@@ -815,6 +838,7 @@ func (c *Context) Render(code int, r render.Render) {
 		return
 	}
 
+	// 调用渲染的逻辑
 	if err := r.Render(c.Writer); err != nil {
 		panic(err)
 	}
@@ -943,6 +967,8 @@ func (c *Context) SSEvent(name string, message interface{}) {
 
 // Stream sends a streaming response and returns a boolean
 // indicates "Is client disconnected in middle of stream"
+// 发送流响应并返回布尔值
+// 表示“客户端在流中间断开连接”
 func (c *Context) Stream(step func(w io.Writer) bool) bool {
 	w := c.Writer
 	clientGone := w.CloseNotify()
@@ -965,6 +991,7 @@ func (c *Context) Stream(step func(w io.Writer) bool) bool {
 /************************************/
 
 // Negotiate contains all negotiations data.
+// 包含所有交流数据。
 type Negotiate struct {
 	Offered  []string
 	HTMLName string
@@ -975,26 +1002,30 @@ type Negotiate struct {
 }
 
 // Negotiate calls different Render according acceptable Accept format.
+//	根据可接受的Accept格式协商不同的Render调用。
 func (c *Context) Negotiate(code int, config Negotiate) {
 	switch c.NegotiateFormat(config.Offered...) {
+	//JSON格式
 	case binding.MIMEJSON:
 		data := chooseData(config.JSONData, config.Data)
 		c.JSON(code, data)
-
+	//HTML格式
 	case binding.MIMEHTML:
 		data := chooseData(config.HTMLData, config.Data)
 		c.HTML(code, config.HTMLName, data)
-
+	//XML模式
 	case binding.MIMEXML:
 		data := chooseData(config.XMLData, config.Data)
 		c.XML(code, data)
 
 	default:
+		// 如果不是上述的几种格式,抛出错误
 		c.AbortWithError(http.StatusNotAcceptable, errors.New("the accepted formats are not offered by the server")) // nolint: errcheck
 	}
 }
 
 // NegotiateFormat returns an acceptable Accept format.
+// 凭据格式化
 func (c *Context) NegotiateFormat(offered ...string) string {
 	assert1(len(offered) > 0, "you must provide at least one offer")
 
@@ -1006,13 +1037,15 @@ func (c *Context) NegotiateFormat(offered ...string) string {
 	}
 	for _, accepted := range c.Accepted {
 		for _, offert := range offered {
-			// According to RFC 2616 and RFC 2396, non-ASCII characters are not allowed in headers,
-			// therefore we can just iterate over the string without casting it into []rune
+			//根据RFC 2616和RFC 2396，标头中不允许使用非ASCII字符，
+			//因此我们可以迭代字符串而不将其转换为[]符文
 			i := 0
 			for ; i < len(accepted); i++ {
+				//* 代表接收任意字符 那么就可以返回当前offert
 				if accepted[i] == '*' || offert[i] == '*' {
 					return offert
 				}
+				// 如果当前offert和accepted不相等的话，可以直接可以跳过当前accepted
 				if accepted[i] != offert[i] {
 					break
 				}
@@ -1037,6 +1070,10 @@ func (c *Context) SetAccepted(formats ...string) {
 // Deadline returns the time when work done on behalf of this context
 // should be canceled. Deadline returns ok==false when no deadline is
 // set. Successive calls to Deadline return the same results.
+// 返回代表此上下文完成工作的时间
+// 应该被取消没有截止日期，截止日期返回ok == false
+// 设置对截止日期的连续调用返回相同的结果。
+// 这个地方应该被重写，来返回一个请求的处理时间，这样可以防止一个http被阻塞，设置一个超时时间可以避免这种状况
 func (c *Context) Deadline() (deadline time.Time, ok bool) {
 	return
 }
@@ -1044,6 +1081,10 @@ func (c *Context) Deadline() (deadline time.Time, ok bool) {
 // Done returns a channel that's closed when work done on behalf of this
 // context should be canceled. Done may return nil if this context can
 // never be canceled. Successive calls to Done return the same value.
+// 返回代表此工作完成时关闭的频道
+// 上下文应该被取消。如果此上下文可以，则完成可以返回nil
+// 永远不会被取消对Done的连续调用返回相同的值。
+// 返回一个只可读的channel 如果能够返回值代表当前上下文已经结束，如果返回nil代表可以继续执行
 func (c *Context) Done() <-chan struct{} {
 	return nil
 }
@@ -1054,13 +1095,19 @@ func (c *Context) Done() <-chan struct{} {
 // If Done is closed, Err returns a non-nil error explaining why:
 // Canceled if the context was canceled
 // or DeadlineExceeded if the context's deadline passed.
+// 在Done关闭后返回一个非零错误值，
+// 对Err的连续调用返回相同的错误。
+// 如果Done尚未关闭，则Err返回nil。
+// 如果Done关闭，Err会返回一个非零错误，解释原因：
+// 如果上下文被取消，则取消
+// 如果上下文的截止日期已过，则截止日期超过。
 func (c *Context) Err() error {
 	return nil
 }
 
-// Value returns the value associated with this context for key, or nil
-// if no value is associated with key. Successive calls to Value with
-// the same key returns the same result.
+// 返回与key的上下文关联的值，或者为nil
+// 如果没有值与键相关联。连续调用Value with
+// 相同的键返回相同的结果。
 func (c *Context) Value(key interface{}) interface{} {
 	if key == 0 {
 		return c.Request

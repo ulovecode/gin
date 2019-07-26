@@ -35,6 +35,7 @@ func WriteString(w http.ResponseWriter, format string, data []interface{}) (err 
 		_, err = fmt.Fprintf(w, format, data...)
 		return
 	}
+	// 将string放入到输出流
 	_, err = io.WriteString(w, format)
 	return
 }

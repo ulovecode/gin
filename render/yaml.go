@@ -20,7 +20,7 @@ var yamlContentType = []string{"application/x-yaml; charset=utf-8"}
 // Render (YAML) marshals the given interface object and writes data with custom ContentType.
 func (r YAML) Render(w http.ResponseWriter) error {
 	r.WriteContentType(w)
-
+	// 调用yaml的解析
 	bytes, err := yaml.Marshal(r.Data)
 	if err != nil {
 		return err

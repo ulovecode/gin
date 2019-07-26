@@ -35,6 +35,7 @@ var (
 )
 
 // LoggerConfig defines the config for Logger middleware.
+// 日志配置 ，可选日志的格式，标准输出的形式跳过的路径
 type LoggerConfig struct {
 	// Optional. Default value is gin.defaultLogFormatter
 	Formatter LogFormatter
@@ -49,6 +50,7 @@ type LoggerConfig struct {
 }
 
 // LogFormatter gives the signature of the formatter function passed to LoggerWithFormatter
+// 日志格式化函数可以使用闭包，能够维护函数内的状态
 type LogFormatter func(params LogFormatterParams) string
 
 // LogFormatterParams is the structure any formatter will be handed when time to log comes
@@ -60,6 +62,7 @@ type LogFormatterParams struct {
 	// StatusCode is HTTP response code.
 	StatusCode int
 	// Latency is how much time the server cost to process a certain request.
+	// 延迟是服务器处理特定请求所花费的时间。
 	Latency time.Duration
 	// ClientIP equals Context's ClientIP method.
 	ClientIP string
@@ -70,8 +73,10 @@ type LogFormatterParams struct {
 	// ErrorMessage is set if error has occurred in processing the request.
 	ErrorMessage string
 	// isTerm shows whether does gin's output descriptor refers to a terminal.
+	// 显示gin的输出描述符是否指向终端。
 	isTerm bool
 	// BodySize is the size of the Response Body
+	//响应体大小
 	BodySize int
 	// Keys are the keys set on the request's context.
 	Keys map[string]interface{}
@@ -94,6 +99,7 @@ func (p *LogFormatterParams) StatusCodeColor() string {
 }
 
 // MethodColor is the ANSI color for appropriately logging http method to a terminal.
+// 方法颜色
 func (p *LogFormatterParams) MethodColor() string {
 	method := p.Method
 
@@ -123,13 +129,16 @@ func (p *LogFormatterParams) ResetColor() string {
 }
 
 // IsOutputColor indicates whether can colors be outputted to the log.
+// 日志是否有颜色
 func (p *LogFormatterParams) IsOutputColor() bool {
 	return consoleColorMode == forceColor || (consoleColorMode == autoColor && p.isTerm)
 }
 
 // defaultLogFormatter is the default log format function Logger middleware uses.
+// 默认的日志形式
 var defaultLogFormatter = func(param LogFormatterParams) string {
 	var statusColor, methodColor, resetColor string
+	// 设置日志各个参数的颜色
 	if param.IsOutputColor() {
 		statusColor = param.StatusCodeColor()
 		methodColor = param.MethodColor()
@@ -138,9 +147,12 @@ var defaultLogFormatter = func(param LogFormatterParams) string {
 
 	if param.Latency > time.Minute {
 		// Truncate in a golang < 1.8 safe way
+		// 设置参数延迟
 		param.Latency = param.Latency - param.Latency%time.Second
 	}
+	// 返回被格式化的String
 	return fmt.Sprintf("[GIN] %v |%s %3d %s| %13v | %15s |%s %-7s %s %s\n%s",
+		// 这个日期是golang的格式化日期
 		param.TimeStamp.Format("2006/01/02 - 15:04:05"),
 		statusColor, param.StatusCode, resetColor,
 		param.Latency,
@@ -179,11 +191,13 @@ func ErrorLoggerT(typ ErrorType) HandlerFunc {
 
 // Logger instances a Logger middleware that will write the logs to gin.DefaultWriter.
 // By default gin.DefaultWriter = os.Stdout.
+// 默认的日志处理    实际上每一个中间件都是一个HandlerFunc
 func Logger() HandlerFunc {
 	return LoggerWithConfig(LoggerConfig{})
 }
 
 // LoggerWithFormatter instance a Logger middleware with the specified log format function.
+// 只使用格式化到日志
 func LoggerWithFormatter(f LogFormatter) HandlerFunc {
 	return LoggerWithConfig(LoggerConfig{
 		Formatter: f,
@@ -192,6 +206,7 @@ func LoggerWithFormatter(f LogFormatter) HandlerFunc {
 
 // LoggerWithWriter instance a Logger middleware with the specified writer buffer.
 // Example: os.Stdout, a file opened in write mode, a socket...
+// 使用什么类型到输出，和跳过的路径
 func LoggerWithWriter(out io.Writer, notlogged ...string) HandlerFunc {
 	return LoggerWithConfig(LoggerConfig{
 		Output:    out,
@@ -200,14 +215,17 @@ func LoggerWithWriter(out io.Writer, notlogged ...string) HandlerFunc {
 }
 
 // LoggerWithConfig instance a Logger middleware with config.
+// 传入日志配置的一个日志中间件
 func LoggerWithConfig(conf LoggerConfig) HandlerFunc {
 	formatter := conf.Formatter
 	if formatter == nil {
+		// 如果没有自定义日志的格式，就使用默认的日志形式
 		formatter = defaultLogFormatter
 	}
 
 	out := conf.Output
 	if out == nil {
+		// 使用默认的输出流,控制台
 		out = DefaultWriter
 	}
 
@@ -220,6 +238,7 @@ func LoggerWithConfig(conf LoggerConfig) HandlerFunc {
 		isTerm = false
 	}
 
+	//  这个其实就是一个类似于java的set集合，里面有要跳过的路径
 	var skip map[string]struct{}
 
 	if length := len(notlogged); length > 0 {
@@ -230,6 +249,7 @@ func LoggerWithConfig(conf LoggerConfig) HandlerFunc {
 		}
 	}
 
+	// 返回一个函数
 	return func(c *Context) {
 		// Start timer
 		start := time.Now()
@@ -237,9 +257,14 @@ func LoggerWithConfig(conf LoggerConfig) HandlerFunc {
 		raw := c.Request.URL.RawQuery
 
 		// Process request
+		// 处理请求 ，可以看作一个代理模式，执行完成以后会调剩下的方法
+		// 执行前
+
 		c.Next()
 
+		// 执行后的操作
 		// Log only when path is not being skipped
+		// 当url路径在日志中显示里面，就被跳过了
 		if _, ok := skip[path]; !ok {
 			param := LogFormatterParams{
 				Request: c.Request,
@@ -264,6 +289,7 @@ func LoggerWithConfig(conf LoggerConfig) HandlerFunc {
 
 			param.Path = path
 
+			// 注入参数到out字符串里面
 			fmt.Fprint(out, formatter(param))
 		}
 	}
